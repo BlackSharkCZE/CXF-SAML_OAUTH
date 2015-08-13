@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	   xmlns:p="http://www.springframework.org/schema/p"
+	   xmlns:jaxrs="http://cxf.apache.org/jaxrs" xmlns:simple="http://cxf.apache.org/simple"
+	   xmlns:soap="http://cxf.apache.org/bindings/soap" xmlns:jaxws="http://cxf.apache.org/jaxws"
+	   xsi:schemaLocation="
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+	http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+	http://cxf.apache.org/simple http://cxf.apache.org/schemas/simple.xsd http://cxf.apache.org/bindings/soap
+	http://cxf.apache.org/schemas/configuration/soap.xsd http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd ">
+
+	<import resource="classpath:META-INF/cxf/cxf-servlet.xml"/>
+	<import resource="classpath:META-INF/cxf/cxf.xml"/>
+
+
+	<bean id="resourceServerTokenServices"
+		  class="sk.anext.oauth.CustomRemoteTokenServices"
+		  p:checkTokenEndpointUrl="<INTROSPECT_URL>"
+		  p:clientId="angularTestClient"
+		  p:clientSecret="IoIObunQaj8uyXAt1RxEptUtz5ixBYLH3AFNRnQBkGuG5bVWslihQrpnuOxOJFmGP5bUkD8uavPkpLZIGhlpQA"/>
+
+	<bean id="oAuthInterceptor"
+		  class="org.madbit.soap.OAuthInterceptor"
+			p:resourceServerTokenServices-ref="resourceServerTokenServices" />
+
+
+	<bean id="myServiceImpl" class="org.madbit.soap.MyServiceImpl"/>
+
+	<jaxws:endpoint implementor="#myServiceImpl" address="/MyService">
+		<jaxws:properties>
+		</jaxws:properties>
+		<jaxws:inInterceptors>
+			<ref bean="oAuthInterceptor"/>
+		</jaxws:inInterceptors>
+		<jaxws:binding>
+			<soap:soapBinding style="document" use="literal" version="1.1"/>
+		</jaxws:binding>
+	</jaxws:endpoint>
+
+</beans>
