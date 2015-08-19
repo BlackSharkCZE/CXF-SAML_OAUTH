@@ -1,0 +1,64 @@
+Demo aplikace, poskytujici SOAP EndPoint a REST EndPoint.
+Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML token.
+
+
+**************
+*** SERVER ***
+**************
+
+	SOAP ROZHRANI
+	-------------
+		WSDL: src/main/java/resources/wsdl/MyServiceLocal.wsdl
+
+		Poskytuje metodu sum, ktera pocita sumu z predanych parametru. Pro pristup je treba validni oAuth token nebo SAML token.
+		OAuth token se predava v HTTP Headru pozadavku jako "Authorization: Bearer <TOKEN>. Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
+
+		SAML Token se predava v soap:header elementu v wss:security. Pro validaci se pouziva WSS4JInInterceptor. Pro doplneni timestamp (musi v odpovedi byt)
+		do odchoziho pozadavku WSS4JOutInterceptor.
+
+
+	REST ROZHRANI
+	-------------
+			URL: http://<SERVER>:<PORT>/rest/RestMyService/RestMyService/sum
+
+			Poskytuje metodu, ktera pocita sumu z predanych parametru. Pro pristup je treba validni oAuth token nebo SAML token.
+			OAuth token se predava v HTTP Headru pozadavku jako "Authorization: Bearer <TOKEN>". Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
+
+			SAML Token se predava v HTTP Headeru pozadavku jako "Authorization: SAML <TOKEN>". Aplikace je aktualne nastavena tak, ze SAML token
+			musi byt deflated. Konfigurace tohoto nastaveni se provadi v src/main/webapp/WEB-INF/myservice-servlet.xml na beane "samlHandler" jako
+			property useDeflateEncoding.
+
+			Pokud neni DeflateEncoding povoleny je treba zkontrolovat nastaveni maximalni velikosti HTTP headeru na server. Tomcat ma jako vychozi
+			hodnotu 8kB, do cehoz se SAML token z UPVS nevejde.
+
+			Na restove rozhrani je treba POSTem predat strukturu jako v ukazce src/main/resources/META-INF/erl/request.json.
+
+
+**************
+*** CLIENT ***
+**************
+
+	SOAP ROZHRANI
+	-------------
+		Volani SOAP rozhrani pomoci SAML tokenu je reseno jako test v aktualnim projektu. Implementace je dostupna sk.anext.dev.STSClientTest.
+		Konfigurace klienta je v souboru src/test/resources/cxf-client.xml ve kterem je u jaxws:client odkaz na WSDL, ve kterem musi byt definovane
+		polycies pro SAML.
+
+		Pro volani SOAP s oAuth token je mozne pouzit libovolny nastroj pro volani SOAP metod (SoapUI) a jen do headeru pridat potrebny Authorization
+		s validnim oAuth tokenem (ten je mozne ziskat napr. testem z RESToveho rozhrani main.erl token).
+
+	REST ROZHRANI
+	-------------
+		Soucasti projektu je erlang script src/main/resources/META-INF/erl/main.erl, kterym se daji poustet ruzne testy pro restove rozhrani.
+		Tyto testy pro SAML vyzaduji v souboru ulozeny validni SAML token (ukazkovy: src/main/resources/saml-assertion.xml).
+
+		a) main.erl rest_with_saml_deflate
+			SAML test zajistuje vytvoreni deflate saml tokenu, pridani headeru do hlavicky a zavolani endpointu.
+		b) main.erl rest_with_saml
+			SAML test pro rozhrani, pro ktere je vypnuta podpora pro deflate SAML token
+		c) main.erl rest_with_oauth
+			Vola rozhrani s oAuth tokenem, ktery je nastaveny v main.erl jako ACCESS_TOKEN
+		d) main.erl token
+			Ziska novy access token z OIDC
+		e) main.erl rest_without_saml
+			Zavola restovy endpoint bez security (bez SAML i oAuth)
