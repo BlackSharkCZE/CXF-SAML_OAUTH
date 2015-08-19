@@ -28,6 +28,15 @@ public class OAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 	private static final String AUTHORIZATION_TOKEN_HEADER = "Authorization";
 	private ResourceServerTokenServices resourceServerTokenServices;
 
+	private final HashMap<String, Object> wssInParams = new HashMap<String, Object>() {{
+		put("action", "SAMLTokenSigned Timestamp"); // validate SAML token signature
+		put("signaturePropFile", "/home/blackshark/tmp/spring-soap/src/main/resources/serverKeystore.properties");
+		put("decryptionPropFile", "/home/blackshark/tmp/spring-soap/src/main/resources/serverKeystore.properties");
+		put("passwordCallbackClass", "cxf.client.ClientCallbackHandler");
+		put("signatureAlgorithm", "http://www.w3.org/2000/09/xmldsig#rsa-sha1");
+		put("signatureDigestAlgorithm", "http://www.w3.org/2000/09/xmldsig#sha1");
+	}};
+
 
 	public OAuthInterceptor() {
 		super(Phase.PRE_PROTOCOL);
@@ -35,6 +44,7 @@ public class OAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 
 	public void handleMessage(Message message) throws Fault {
 		logger.info("OAuthInterceptor: " + message);
+//		message.put(WSS4JInInterceptor.class.getName() + ".DONE", Boolean.TRUE);
 		HttpServletRequest request = (HttpServletRequest) message.get(AbstractHTTPDestination.HTTP_REQUEST);
 		final String authorizationHeader = request.getHeader(AUTHORIZATION_TOKEN_HEADER);
 
@@ -46,6 +56,7 @@ public class OAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 			if (parts[0].trim().equalsIgnoreCase("Bearer")) {
 				try {
 					final OAuth2Authentication oAuth2Authentication = resourceServerTokenServices.loadAuthentication(parts[1].trim());
+					message.put("APPEND_TIMESTAMP", Boolean.FALSE);
 					logger.debug("Token authentication: " + oAuth2Authentication);
 				} catch (Exception e) {
 					logger.error("oAuth token validation failed!", e);
@@ -60,12 +71,9 @@ public class OAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 
 		} else {
 			logger.debug("Authorization Header is not present. Execute WSS4JInInterceptor!");
-			// oAuth token is not present in http headers. Delegate validation to WSS4J Interceptor
-			final HashMap<String, Object> key = new HashMap<String, Object>() {{
-				put("action","SAMLTokenSigned" ); // validate SAML token signature
-			}};
-			final WSS4JInInterceptor wss4JInInterceptor = new WSS4JInInterceptor(key);
+			final WSS4JInInterceptor wss4JInInterceptor = new WSS4JInInterceptor(wssInParams);
 			message.getInterceptorChain().add(wss4JInInterceptor);
+			message.put("APPEND_TIMESTAMP", Boolean.TRUE);
 		}
 
 	}

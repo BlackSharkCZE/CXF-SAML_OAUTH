@@ -1,8 +1,9 @@
 package org.madbit.soap;
 
-import myservice.MyService;
-import myservice.SumRequest;
-import myservice.SumResponse;
+
+import cxf.client.gen.MyService;
+import cxf.client.gen.SumRequest;
+import cxf.client.gen.SumResponse;
 
 public class MyServiceImpl implements MyService {
 

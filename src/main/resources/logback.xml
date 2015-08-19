@@ -1,0 +1,31 @@
+<configuration>
+	<property name="LOG_OUTPUT_DIR" value="/tmp" />
+	<property name="LOG_FILE_NAME" value="cxf-app" />
+	<property name="DEFAULT_LOG_LEVEL" value="INFO" />
+
+	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_OUTPUT_DIR}/${LOG_FILE_NAME}.log</file>
+		<append>true</append>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_OUTPUT_DIR}/${LOG_FILE_NAME}.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>90</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%date{yyyy-MM-dd'T'HH:mm:ss.SSS}|%level|%thread|%class{36}:%line|%method|%msg|%ex%n</pattern>
+			<immediateFlush>true</immediateFlush>
+		</encoder>
+	</appender>
+
+
+
+	<root level="${DEFAULT_LOG_LEVEL}">
+		<appender-ref ref="FILE"/>
+	</root>
+
+	<logger name="org.apache.cxf" level="DEBUG">
+		<appender-ref ref="FILE"/>
+	</logger>
+
+
+
+</configuration>

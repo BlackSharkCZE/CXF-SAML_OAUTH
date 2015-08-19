@@ -12,8 +12,8 @@
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
-	
-	
+
+
 	<!-- Servlet for SOAP -->
 	<servlet>
 		<servlet-name>soap</servlet-name>
@@ -29,6 +29,7 @@
 		<servlet-name>soap</servlet-name>
 		<url-pattern>/dispatch/*</url-pattern>
 	</servlet-mapping>
+
 	<servlet>
 		<servlet-name>cxf</servlet-name>
 		<servlet-class>org.apache.cxf.transport.servlet.CXFServlet</servlet-class>
@@ -37,5 +38,9 @@
 	<servlet-mapping>
 		<servlet-name>cxf</servlet-name>
 		<url-pattern>/soap/*</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>cxf</servlet-name>
+		<url-pattern>/rest/*</url-pattern>
 	</servlet-mapping>
 </web-app>

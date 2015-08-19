@@ -1,42 +1,120 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:aop="http://www.springframework.org/schema/aop"
 	   xmlns:p="http://www.springframework.org/schema/p"
 	   xmlns:jaxrs="http://cxf.apache.org/jaxrs" xmlns:simple="http://cxf.apache.org/simple"
-	   xmlns:soap="http://cxf.apache.org/bindings/soap" xmlns:jaxws="http://cxf.apache.org/jaxws"
+	   xmlns:soap="http://cxf.apache.org/bindings/soap"
+	   xmlns:jaxws="http://cxf.apache.org/jaxws"
 	   xsi:schemaLocation="
 	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
 	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
-	http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
 	http://cxf.apache.org/simple http://cxf.apache.org/schemas/simple.xsd http://cxf.apache.org/bindings/soap
-	http://cxf.apache.org/schemas/configuration/soap.xsd http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd ">
+	http://cxf.apache.org/schemas/configuration/soap.xsd
+	http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+	http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd ">
 
 	<import resource="classpath:META-INF/cxf/cxf-servlet.xml"/>
 	<import resource="classpath:META-INF/cxf/cxf.xml"/>
 
-
+	<!-- oAuth token validation against MITRe OIDC -->
 	<bean id="resourceServerTokenServices"
 		  class="sk.anext.oauth.CustomRemoteTokenServices"
-		  p:checkTokenEndpointUrl="<INTROSPECT_URL>"
+		  p:checkTokenEndpointUrl="http://ihs1.metais2.anx.sk:8081/metaisiam/introspect"
 		  p:clientId="angularTestClient"
 		  p:clientSecret="IoIObunQaj8uyXAt1RxEptUtz5ixBYLH3AFNRnQBkGuG5bVWslihQrpnuOxOJFmGP5bUkD8uavPkpLZIGhlpQA"/>
 
+
 	<bean id="oAuthInterceptor"
 		  class="org.madbit.soap.OAuthInterceptor"
-			p:resourceServerTokenServices-ref="resourceServerTokenServices" />
+		  p:resourceServerTokenServices-ref="resourceServerTokenServices"/>
+	<bean id="oAuthOutInterceptor" class="org.madbit.soap.OAuthOutInterceptor"/>
 
+	<bean id="wss4jOutInterceptor" class="org.apache.cxf.ws.security.wss4j.WSS4JOutInterceptor">
+		<constructor-arg>
+			<map>
+				<entry key="action" value="Timestamp"/>
+			</map>
+		</constructor-arg>
+	</bean>
 
 	<bean id="myServiceImpl" class="org.madbit.soap.MyServiceImpl"/>
+	<bean id="removeSoapActionInInterceptor" class="org.madbit.soap.RemoveSoapActionInInterceptor"/>
 
-	<jaxws:endpoint implementor="#myServiceImpl" address="/MyService">
+	<jaxws:endpoint implementor="#myServiceImpl"
+					address="/MyService"
+					wsdlLocation="classpath:/wsdl/MyServiceLocal.wsdl">
 		<jaxws:properties>
+			<!--<entry key="ws-security.encryption.properties" value="classpath:serverKeystore.properties"/>
+			<entry key="schema-validation-enabled" value="true"/>
+			<entry key="ws-security.saml-role-attributename" value="Roles" />-->
 		</jaxws:properties>
 		<jaxws:inInterceptors>
+			<ref bean="removeSoapActionInInterceptor"/>
 			<ref bean="oAuthInterceptor"/>
+			<!--<ref bean="oAuthInterceptor"/>-->
 		</jaxws:inInterceptors>
-		<jaxws:binding>
-			<soap:soapBinding style="document" use="literal" version="1.1"/>
-		</jaxws:binding>
+		<jaxws:outInterceptors>
+			<ref bean="oAuthOutInterceptor"/>
+			<ref bean="wss4jOutInterceptor"/>
+		</jaxws:outInterceptors>
 	</jaxws:endpoint>
+
+
+	<!-- JAX RS - REST -->
+	<!--<bean id="tvServiceClientFactory" class="org.apache.cxf.jaxrs.client.JAXRSClientFactoryBean">
+		<property name="address" value="http://ihs1.metais2.anx.sk:8081/metaisiam/introspect"/>
+		<property name="headers">
+			<map>
+				<entry key="Accept" value="application/xml"/>
+			</map>
+		</property>
+	</bean>
+
+	<bean id="tvServiceClient" factory-bean="tvServiceClientFactory" factory-method="createWebClient"/>
+
+	<bean id="tokenValidator" class="org.apache.cxf.rs.security.oauth2.filters.AccessTokenValidatorClient">
+		<property name="tokenValidatorClient" ref="tvServiceClient"/>
+	</bean>
+
+	<bean id="oauthFiler" class="org.apache.cxf.rs.security.oauth2.filters.OAuthRequestFilter">
+		<property name="tokenValidator" ref="tokenValidator"/>
+	</bean>-->
+
+
+	<bean id="samlHandler"
+		  class="org.madbit.rest.GemSamlHeaderInHandler"
+		  p:useDeflateEncoding="true"/>
+
+	<bean class="org.madbit.rest.OAuthRestFilter"
+		  id="authRestFilter"
+		  p:gemSamlHeaderInHandler-ref="samlHandler"
+		  p:resourceServerTokenServices-ref="resourceServerTokenServices"/>
+
+
+	<jaxrs:server id="sumService" address="/RestMyService">
+		<jaxrs:providers>
+			<bean class="org.apache.cxf.jaxrs.provider.json.JSONProvider">
+				<property name="dropRootElement" value="true"/>
+				<property name="dropCollectionWrapperElement" value="true"/>
+				<property name="serializeAsArray" value="true"/>
+				<property name="supportUnwrapped" value="true"/>
+			</bean>
+			<ref bean="authRestFilter"/>
+		</jaxrs:providers>
+		<jaxrs:properties>
+			<!--<entry key="ws-security.signature.properties" value="/home/blackshark/tmp/spring-soap/src/main/resources/serverKeystore.properties"/>-->
+			<entry key="ws-security.signature.properties" value="serverKeystore.properties"/>
+		</jaxrs:properties>
+		<jaxrs:serviceBeans>
+			<bean class="org.madbit.rest.SumServiceImpl"/>
+		</jaxrs:serviceBeans>
+		<jaxrs:extensionMappings>
+			<entry key="json" value="application/json"/>
+		</jaxrs:extensionMappings>
+		<jaxrs:languageMappings>
+			<entry key="en" value="en-gb"/>
+		</jaxrs:languageMappings>
+	</jaxrs:server>
 
 </beans>
