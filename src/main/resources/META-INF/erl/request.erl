@@ -25,7 +25,6 @@
 % to run use: erl -pa ~/.erlang123/lib/mochiweb/ebin/
 
 init() ->
-  %code:add_path("/home/blackshark/.erlang123/lib/mochiweb/ebin/"),
   ok.
 
 get_access_token() ->
