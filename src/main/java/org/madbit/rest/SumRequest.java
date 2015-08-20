@@ -22,6 +22,14 @@ public class SumRequest {
 	@XmlElement(name = "sum")
 	private Long sum = 0L;
 
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder("SumRequest{");
+		sb.append("items=").append(items);
+		sb.append(", sum=").append(sum);
+		sb.append('}');
+		return sb.toString();
+	}
 
 	public List<Integer> getItems() {
 		return items;

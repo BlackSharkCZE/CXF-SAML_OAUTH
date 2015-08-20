@@ -30,7 +30,7 @@ public abstract class GemAbstractSamlBase64InHandler extends AbstractSamlBase64I
 			byte[] deflatedToken = Base64Utility.decode(assertion);
 
 			InputStream is = useDeflateEncoding()
-					? customInflate(deflatedToken)
+					? fixInflate(deflatedToken)
 					: new ByteArrayInputStream(deflatedToken);
 			validateToken(message, is);
 		} catch (Base64Exception ex) {
@@ -42,18 +42,8 @@ public abstract class GemAbstractSamlBase64InHandler extends AbstractSamlBase64I
 
 
 
-	private InputStream customInflate(byte[] binAssertionDeflated) throws DataFormatException {
-
+	private InputStream fixInflate(byte[] binAssertionDeflated) throws DataFormatException {
 		return new InflaterInputStream(new ByteArrayInputStream(binAssertionDeflated));
-/*
-		Inflater inflater = new Inflater(false);
-		inflater.setInput(binAssertionDeflated);
-		final byte inflatedBytes[] = new byte[binAssertionDeflated.length * 25];
-		final int inflate = inflater.inflate(inflatedBytes);
-		final byte[] samlAssertion = new byte[inflate];
-		System.arraycopy(inflatedBytes, 0, samlAssertion, 0, inflate);
-		return new ByteArrayInputStream(samlAssertion, 0, samlAssertion.length);
-		*/
 	}
 
 }

@@ -1,6 +1,12 @@
 Demo aplikace, poskytujici SOAP EndPoint a REST EndPoint.
 Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML token.
 
+Nastaveni logovani
+ Konfigurace: 						src/main/resources/logback.xml
+ Defaultni umisteni logu: /tmp/cxf-app
+ Defaultni level:					INFO
+
+
 
 **************
 *** SERVER ***
@@ -9,12 +15,20 @@ Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML toke
 	SOAP ROZHRANI
 	-------------
 		WSDL: src/main/java/resources/wsdl/MyServiceLocal.wsdl
+		WSDL: https://localhost:<PORT>/<CONTEXT_ROOT>/soap/MyService?wsdl
 
 		Poskytuje metodu sum, ktera pocita sumu z predanych parametru. Pro pristup je treba validni oAuth token nebo SAML token.
 		OAuth token se predava v HTTP Headeru pozadavku jako "Authorization: Bearer <TOKEN>. Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
 
 		SAML Token se predava v soap:header elementu v wss:security. Pro validaci se pouziva WSS4JInInterceptor. Pro doplneni timestamp (musi v odpovedi byt)
 		do odchoziho pozadavku WSS4JOutInterceptor.
+
+		Konfigurace: src/main/webapp/WEB-INF/myservice-servlet.xml
+
+		Za validaci prichoziho pozadavku je zodpovedny org.madbit.soap.OAuthInterceptor, ktery kontroluje, zda je v prichozim pozadavku header
+		Authorization: Bearer <TOKEN>. Pokud je predany, provadi validaci oAuth tokenu vuci OIDC pomoci Introspection.
+
+		Pokud header v pozadavku neni pridava do InChainu dynamicky WSS4JInInterceptor, ktery validuje SAML token.
 
 
 	REST ROZHRANI
@@ -25,8 +39,8 @@ Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML toke
 			OAuth token se predava v HTTP Headeru pozadavku jako "Authorization: Bearer <TOKEN>". Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
 
 			SAML Token se predava v HTTP Headeru pozadavku jako "Authorization: SAML <TOKEN>". Aplikace je aktualne nastavena tak, ze SAML token
-			musi byt deflated. Konfigurace tohoto nastaveni se provadi v src/main/webapp/WEB-INF/myservice-servlet.xml na beane "samlHandler" jako
-			property useDeflateEncoding.
+			musi byt deflated. Konfigurace tohoto nastaveni se provadi v src/main/webapp/WEB-INF/myservice-servlet.xml na beane "samlHandler"
+			(org.madbit.rest.GemSamlHeaderInHandler) jako property useDeflateEncoding.
 
 			Pokud neni DeflateEncoding povoleny je treba zkontrolovat nastaveni maximalni velikosti HTTP headeru na server. Tomcat ma jako vychozi
 			hodnotu 8kB, do cehoz se SAML token z UPVS nevejde.
@@ -44,14 +58,15 @@ Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML toke
 		Konfigurace klienta je v souboru src/test/resources/cxf-client.xml ve kterem je u jaxws:client odkaz na WSDL, ve kterem musi byt definovane
 		polycies pro SAML.
 
-		Pro volani SOAP s oAuth token je mozne pouzit Erlang test aplikaci src/main/resources/META-INF/erl/main.erl (main.erl soap_with_oauth),
+		Pro volani SOAP s oAuth tokenem je mozne pouzit Erlang test aplikaci src/main/resources/META-INF/erl/main.erl (main.erl soap_with_oauth),
 		ktera preda pozadavek definovany v src/main/resources/META-INF/erl/request.xml s pouzitim tokenu definovanym v main.erl jako ACCESS_TOKEN.
 			Alternativne je mozne pouzit libovolny SOAP nastroj (SoapUI) a zavolat dnou sluzbu s pridanym Authorization header do pozadavku.
 
 	REST ROZHRANI
 	-------------
 		Soucasti projektu je erlang script src/main/resources/META-INF/erl/main.erl, kterym se daji poustet ruzne testy pro restove rozhrani.
-		Tyto testy pro SAML vyzaduji v souboru ulozeny validni SAML token (ukazkovy: src/main/resources/saml-assertion.xml).
+		Tyto testy pro SAML vyzaduji v souboru ulozeny validni SAML token (ukazkovy: src/main/resources/saml-assertion.xml). SAML token ( saml:assertion)
+		musi byt v souboru ulozeny tak, jak byl ziskany ze serveru. Po zmene formatorvani (odsazeni apd) neni mozne overit podpis (nesouhlasi).
 
 		a) main.erl rest_with_saml_deflate
 			SAML test zajistuje vytvoreni deflate saml tokenu, pridani headeru do hlavicky a zavolani endpointu.
@@ -63,3 +78,7 @@ Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML toke
 			Ziska novy access token z OIDC
 		e) main.erl rest_without_saml
 			Zavola restovy endpoint bez security (bez SAML i oAuth)
+
+
+		Testovani REST + oAuth je mozne provest take Java testem RestClientTest.testRestClientTest. Test pouziva jako vstupni data soubor
+		src/main/resources/META-INF/erl/request.json, pro jehoz sumu (vysledek z Restu) je nastavene assertion v testu.

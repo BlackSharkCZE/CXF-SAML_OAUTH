@@ -22,7 +22,7 @@
 		<appender-ref ref="FILE"/>
 	</root>
 
-	<logger name="org.apache.cxf" level="DEBUG">
+	<logger name="org.apache.cxf" level="INFO">
 		<appender-ref ref="FILE"/>
 	</logger>
 
