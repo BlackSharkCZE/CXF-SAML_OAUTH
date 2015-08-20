@@ -10,12 +10,13 @@
 -author("blackshark").
 
 %% API
--export([send_request/2, send_request/3, get_access_token/2, get_access_token/3, get_access_token/0]).
+-export([send_request/2, send_request/4, get_access_token/2, get_access_token/3, get_access_token/0]).
 -export([uncompress/1, compress/1, read_file/1]).
 -export([deflate_data/1, deflate_data_to_string/1, deflate_data_to_file/2, file_to_base64_string/1]).
 -export([call_rest_without_saml/0, call_rest_without_saml/1, call_rest_with_saml/3]).
 -export([call_rest_with_oauth/0, call_rest_with_oauth/1, call_rest_with_oauth/2, call_rest_with_new_oauth/1]).
 
+-export([call_soap_with_oauth/2]).
 -on_load(init/0).
 
 -define(GRANT_TYPE, "client_credentials").
@@ -30,12 +31,21 @@ init() ->
 get_access_token() ->
   get_access_token(?DEFAULT_CLIENT_SECRET, ?DEFAULT_CLIENT_ID, ?DEFAULT_OIDC_TOKEN_URL).
 
+
+call_soap_with_oauth(RequestFile, OAuthToken) ->
+  case file:read_file(RequestFile) of
+    {ok, Data} -> io:format("Using Token: ~p~n", [OAuthToken]),
+      Header = {"Authorization", "Bearer " ++ OAuthToken},
+      send_request(?DEFAULT_SOAP_ENDPOINT_URL, Data, [Header, {"accept", "application/xml"}], "application/xml");
+    _ -> erlang:error("Can not read data file " ++ RequestFile)
+  end.
+
 call_rest_without_saml() ->
   send_request(?DEFAULT_REST_ENDPOINT_URL, []).
 
 call_rest_without_saml(DataFile) ->
   case file:read_file(DataFile) of
-    {ok, Data} -> send_request(?DEFAULT_REST_ENDPOINT_URL, Data, [{"Content-type", "application/json"}]);
+    {ok, Data} -> send_request(?DEFAULT_REST_ENDPOINT_URL, Data, [{"Content-type", "application/json"}], "application/json");
     _ -> erlang:error("Can not read file " ++ DataFile)
   end.
 
@@ -55,21 +65,21 @@ call_rest_with_oauth(OAuthToken, DataFile) ->
   case file:read_file(DataFile) of
     {ok, Data} -> io:format("Using Token: ~p~n", [OAuthToken]),
       Header = {"Authorization", "Bearer " ++ OAuthToken},
-      send_request(?DEFAULT_REST_ENDPOINT_URL, Data, [Header, {"accept", "application/json"}]);
+      send_request(?DEFAULT_REST_ENDPOINT_URL, Data, [Header, {"accept", "application/json"}], "application/json");
     _ -> erlang:error("Can not read data file " ++ DataFile)
   end.
 
 
 call_rest_with_saml(SamlTokenFile, DataFile, Deflate) ->
   Header = case Deflate of
-    true -> {"Authorization", "SAML " ++ deflate_data_to_string(SamlTokenFile)};
-    false -> {"Authorization", "SAML " ++ file_to_base64_string(SamlTokenFile)};
-    _ -> erlang:error("Deflate must be true/false!")
-  end,
+             true -> {"Authorization", "SAML " ++ deflate_data_to_string(SamlTokenFile)};
+             false -> {"Authorization", "SAML " ++ file_to_base64_string(SamlTokenFile)};
+             _ -> erlang:error("Deflate must be true/false!")
+           end,
 
   case file:read_file(DataFile) of
     {ok, Data} ->
-      send_request(?DEFAULT_REST_ENDPOINT_URL, Data, [Header, {"accept", "application/json"}]);
+      send_request(?DEFAULT_REST_ENDPOINT_URL, Data, [Header, {"accept", "application/json"}], "application/json");
     _ -> erlang:error("Can not load data file " ++ DataFile)
   end.
 
@@ -127,15 +137,19 @@ get_access_token(ClientSecret, ClientID, OIDCUrl) ->
     _ -> erlang:error(io:format("~p~n", [Httpcrequest]))
   end.
 
-send_request(Url, Body, Headers) ->
-  {CallStatus, {Status, RHeaders, Response}} = httpc:request(post, {Url, Headers, "application/json", Body}, [], []),
-  case CallStatus of
-    ok -> parse_response(Status, RHeaders, Response);
-    _ -> erlang:error("Failed to call " + Url)
+send_request(Url, Body, Headers, ContentType) ->
+  SSLOpts = [],
+  case httpc:request(post, {Url, Headers, ContentType, Body}, [{ssl, SSLOpts}], []) of
+    {ok, Rest} -> {Status, RHeaders, Response} = Rest,
+      parse_response(Status, RHeaders, Response);
+    {error, Rest} -> io:format("~p~n", [Rest]),
+      erlang:error("Error send request!");
+    _ -> erlang:error("Unknow error send request!")
   end.
 
 send_request(Url, Headers) ->
-  {CallStatus, {Status, RHeaders, Response}} = httpc:request(get, {Url, Headers}, [], []),
+  SSLOpts = [],
+  {CallStatus, {Status, RHeaders, Response}} = httpc:request(get, {Url, Headers}, [{ssl, SSLOpts}], []),
   case CallStatus of
     ok -> parse_response(Status, RHeaders, Response);
     _ -> erlang:error("Failed to call " + Url)

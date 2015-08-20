@@ -1,0 +1,11 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:mys="http://www.madbit.org/MyService/">
+	<soapenv:Header/>
+	<soapenv:Body>
+		<mys:SumRequest>
+			<addend>1</addend>
+			<addend>2</addend>
+			<addend>3</addend>
+			<addend>4</addend>
+		</mys:SumRequest>
+	</soapenv:Body>
+</soapenv:Envelope>
