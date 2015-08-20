@@ -11,7 +11,7 @@ Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML toke
 		WSDL: src/main/java/resources/wsdl/MyServiceLocal.wsdl
 
 		Poskytuje metodu sum, ktera pocita sumu z predanych parametru. Pro pristup je treba validni oAuth token nebo SAML token.
-		OAuth token se predava v HTTP Headru pozadavku jako "Authorization: Bearer <TOKEN>. Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
+		OAuth token se predava v HTTP Headeru pozadavku jako "Authorization: Bearer <TOKEN>. Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
 
 		SAML Token se predava v soap:header elementu v wss:security. Pro validaci se pouziva WSS4JInInterceptor. Pro doplneni timestamp (musi v odpovedi byt)
 		do odchoziho pozadavku WSS4JOutInterceptor.
@@ -22,7 +22,7 @@ Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML toke
 			URL: http://<SERVER>:<PORT>/rest/RestMyService/RestMyService/sum
 
 			Poskytuje metodu, ktera pocita sumu z predanych parametru. Pro pristup je treba validni oAuth token nebo SAML token.
-			OAuth token se predava v HTTP Headru pozadavku jako "Authorization: Bearer <TOKEN>". Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
+			OAuth token se predava v HTTP Headeru pozadavku jako "Authorization: Bearer <TOKEN>". Validace probiha vuci OIDC pomoci sk.anext.oauth.CustomRemoteTokenServices
 
 			SAML Token se predava v HTTP Headeru pozadavku jako "Authorization: SAML <TOKEN>". Aplikace je aktualne nastavena tak, ze SAML token
 			musi byt deflated. Konfigurace tohoto nastaveni se provadi v src/main/webapp/WEB-INF/myservice-servlet.xml na beane "samlHandler" jako
@@ -44,8 +44,9 @@ Pro pristup na EndPointy je treba validni bud oAuth2 access token nebo SAML toke
 		Konfigurace klienta je v souboru src/test/resources/cxf-client.xml ve kterem je u jaxws:client odkaz na WSDL, ve kterem musi byt definovane
 		polycies pro SAML.
 
-		Pro volani SOAP s oAuth token je mozne pouzit libovolny nastroj pro volani SOAP metod (SoapUI) a jen do headeru pridat potrebny Authorization
-		s validnim oAuth tokenem (ten je mozne ziskat napr. testem z RESToveho rozhrani main.erl token).
+		Pro volani SOAP s oAuth token je mozne pouzit Erlang test aplikaci src/main/resources/META-INF/erl/main.erl (main.erl soap_with_oauth),
+		ktera preda pozadavek definovany v src/main/resources/META-INF/erl/request.xml s pouzitim tokenu definovanym v main.erl jako ACCESS_TOKEN.
+			Alternativne je mozne pouzit libovolny SOAP nastroj (SoapUI) a zavolat dnou sluzbu s pridanym Authorization header do pozadavku.
 
 	REST ROZHRANI
 	-------------

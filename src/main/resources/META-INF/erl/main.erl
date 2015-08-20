@@ -1,12 +1,10 @@
 #!/usr/bin/env escript
-%% -*- erlang -*-
-%%! -ssl debug true debugdir /home/blackshark/tmp
+
 
 -define(SAML_ASSERTION_FILE, "/home/blackshark/tmp/spring-soap/src/main/resources/saml-assertion.xml").
 -define(JSON_DATA_FILE, "/home/blackshark/tmp/spring-soap/src/main/resources/META-INF/erl/request.json").
 -define(SOAP_DATA_FILE, "/home/blackshark/tmp/spring-soap/src/main/resources/META-INF/erl/request.xml").
-
--define(ACCESS_TOKEN,"eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE0NDAwMTM3MzQsImF1ZCI6InR5cGVzcmVwbyIsImlzcyI6Imh0dHA6XC9cL2loczEubWV0YWlzMi5hbnguc2s6ODA4MVwvbWV0YWlzaWFtXC8iLCJqdGkiOiIwZmYyM2U0NC02OTRkLTQ5MmEtYTI1MC1iOGUxZWNjMGRmZjYiLCJpYXQiOjE0Mzk5ODQ5MzR9.uTvATGiQc8zhHGGI2CKPUslDuYGDGAfWCQnx7OS_qGFm3Tp0RZn6cjhD5tUcudo9ND9CDj0UwAFZLf1RlXyrtJ0g1toME3jnPb_TqzT0QxgPRc1YWkgwl6i9dGmrenZgSZkKAnbDNeQdZRHvb6ncnOFT7jxsdwjK6JKORPlAEDY").
+-define(ACCESS_TOKEN,"eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE0NDAwODQxMzMsImF1ZCI6InR5cGVzcmVwbyIsImlzcyI6Imh0dHA6XC9cL2loczEubWV0YWlzMi5hbnguc2s6ODA4MVwvbWV0YWlzaWFtXC8iLCJqdGkiOiI0MjFkZTE5Mi1lMDU2LTQ2YWYtYTkyZi0xYTkwOGYxNDUxMDIiLCJpYXQiOjE0NDAwNTUzMzN9.y1oTbfAputg4_rxoT07gBK1zSYxI1y4-GLLSjhXXYTYbFGPuio7gOqYlBjqyq5mc79lb-EngdmBraBIubfI666wbip6uEElSZ6AN7uAYnQNQ9KM9Qj3whgJZe6XptQVy2TeucvJDiCIzIdzIyWUBDHRd88Q3-tWbM4n2gkIMqzQ").
 
 -include("config.hrl").
 

@@ -138,7 +138,7 @@ get_access_token(ClientSecret, ClientID, OIDCUrl) ->
   end.
 
 send_request(Url, Body, Headers, ContentType) ->
-  SSLOpts = [],
+  SSLOpts = [{verify,verify_none},{depth,3}],
   case httpc:request(post, {Url, Headers, ContentType, Body}, [{ssl, SSLOpts}], []) of
     {ok, Rest} -> {Status, RHeaders, Response} = Rest,
       parse_response(Status, RHeaders, Response);
@@ -148,7 +148,7 @@ send_request(Url, Body, Headers, ContentType) ->
   end.
 
 send_request(Url, Headers) ->
-  SSLOpts = [],
+  SSLOpts = [{verify,verify_none},{depth,3}],
   {CallStatus, {Status, RHeaders, Response}} = httpc:request(get, {Url, Headers}, [{ssl, SSLOpts}], []),
   case CallStatus of
     ok -> parse_response(Status, RHeaders, Response);
